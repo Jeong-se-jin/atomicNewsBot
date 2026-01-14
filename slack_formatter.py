@@ -2,15 +2,18 @@
 
 # -*- coding: utf-8 -*-
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import requests
+
+# 한국 시간대 (UTC+9)
+KST = timezone(timedelta(hours=9))
 
 def format_slack_message(all_news_data, kaif_data):
     """
     어제의 원자력 뉴스를 Slack 메시지 형식으로 포맷팅
     """
-    from datetime import timedelta
-    yesterday = datetime.now() - timedelta(days=1)
+    now_kst = datetime.now(KST)
+    yesterday = now_kst - timedelta(days=1)
     yesterday_str = yesterday.strftime('%Y년 %m월 %d일 (%A)')
 
     # Slack Block Kit 형식으로 메시지 구성
@@ -83,7 +86,7 @@ def format_slack_message(all_news_data, kaif_data):
         "elements": [
             {
                 "type": "mrkdwn",
-                "text": f"총 {len(all_news_list)}건의 뉴스 | 수집 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                "text": f"총 {len(all_news_list)}건의 뉴스 | 수집 시간: {datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')} (KST)"
             }
         ]
     })
@@ -145,9 +148,9 @@ def create_today_summary():
     except:
         kaif_posts = []
 
-    # 어제 날짜 확인
-    from datetime import timedelta
-    yesterday = datetime.now() - timedelta(days=1)
+    # 어제 날짜 확인 (한국 시간 기준)
+    now_kst = datetime.now(KST)
+    yesterday = now_kst - timedelta(days=1)
     today_str = yesterday.strftime('%Y.%m.%d')  # 2026.01.12
     today_str_alt = yesterday.strftime('%Y-%m-%d')  # 2026-01-12
     today_date_only = yesterday.strftime('.%m.%d')  # .01.12
