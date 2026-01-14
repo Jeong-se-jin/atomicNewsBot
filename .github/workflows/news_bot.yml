@@ -2,8 +2,8 @@ name: Nuclear News Bot
 
 on:
   schedule:
-    # 매일 한국시간 오전 11시 (UTC 2시)
-    - cron: '0 2 * * *'
+    # 매일 한국시간 오전 11시 15분 (UTC 2시 15분)
+    - cron: '15 2 * * *'
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
