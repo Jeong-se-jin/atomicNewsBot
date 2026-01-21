@@ -1,7 +1,7 @@
 name: Nuclear News Bot
 
 on:
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch: # 수동 실행 가능
 
 jobs:
   crawl-and-send:
@@ -16,11 +16,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup Chrome and ChromeDriver
+      - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: stable
-          install-chromedriver: true
+          chrome-version: 143
 
       - name: Install Python dependencies
         run: |
