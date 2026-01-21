@@ -19,7 +19,8 @@ jobs:
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 143
+          chrome-version: stable
+          install-chromedriver: true
 
       - name: Install Python dependencies
         run: |
