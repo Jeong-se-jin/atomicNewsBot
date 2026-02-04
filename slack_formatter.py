@@ -161,10 +161,10 @@ def create_today_summary():
     # 어제 날짜 뉴스만 필터링
     today_news = []
     for news in all_news:
-        date_str = news.get('date', '')
+        date_str = news.get('date') or ''
         # 다양한 날짜 형식 체크
         # "2026.01.12 09:01" 또는 "2026-01-12" 형식
-        if (today_str in date_str or
+        if date_str and (today_str in date_str or
             today_str_alt in date_str or
             date_str.startswith(today_str) or
             date_str.startswith(today_str_alt)):
