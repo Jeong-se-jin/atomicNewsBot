@@ -31,51 +31,95 @@ def format_slack_message(all_news_data, kaif_data):
         }
     ]
 
-    # 모든 뉴스를 한곳에 모으기
-    all_news_list = []
-
     # 일반 뉴스 (에너지신문, 한국원자력산업신문)
+    general_news_list = []
     for news in all_news_data:
-        all_news_list.append({
-            'title': news.get('title', ''),
-            'url': news.get('url', '')
-        })
+        if news.get('category') not in ('nuclear_news', 'nuclear_events'):
+            general_news_list.append({
+                'title': news.get('title', ''),
+                'url': news.get('url', '')
+            })
 
-    # KAIF 뉴스 링크 (국내기사, 세계기사만)
+    # KAIF 뉴스 링크 (국내기사, 세계기사)
     if kaif_data and len(kaif_data) > 0:
         kaif_post = kaif_data[0]
         news_links = kaif_post.get('news_links', {})
 
-        # 국내기사
         for news in news_links.get('domestic', []):
-            all_news_list.append({
+            general_news_list.append({
                 'title': news.get('title', ''),
                 'url': news.get('url', '')
             })
 
-        # 세계기사
         for news in news_links.get('international', []):
-            all_news_list.append({
+            general_news_list.append({
                 'title': news.get('title', ''),
                 'url': news.get('url', '')
             })
 
-    # 뉴스 목록 출력
-    if all_news_list:
+    # 원자력계 소식 (Gmail 뉴스레터)
+    nuclear_news_list = [n for n in all_news_data if n.get('category') == 'nuclear_news']
+
+    # 원자력계 이벤트 (Gmail 뉴스레터)
+    nuclear_events_list = [n for n in all_news_data if n.get('category') == 'nuclear_events']
+
+    total_count = len(general_news_list) + len(nuclear_news_list) + len(nuclear_events_list)
+    all_news_list = general_news_list  # 푸터 카운트용
+
+    # 일반 뉴스 목록 출력
+    if general_news_list:
         blocks.append({
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*📌 어제의 뉴스* ({len(all_news_list)}건)"
+                "text": f"*📌 어제의 뉴스* ({len(general_news_list)}건)"
             }
         })
 
-        for idx, news in enumerate(all_news_list, 1):
+        for idx, news in enumerate(general_news_list, 1):
             blocks.append({
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
                     "text": f"{idx}. <{news['url']}|{news['title']}>"
+                }
+            })
+
+    # 원자력계 소식 섹션
+    if nuclear_news_list:
+        blocks.append({"type": "divider"})
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*⚛️ 원자력계 소식* ({len(nuclear_news_list)}건)"
+            }
+        })
+        for news in nuclear_news_list:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"• <{news['url']}|{news['title']}>"
+                }
+            })
+
+    # 원자력계 이벤트 섹션
+    if nuclear_events_list:
+        blocks.append({"type": "divider"})
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*📅 원자력계 이벤트* ({len(nuclear_events_list)}건)"
+            }
+        })
+        for news in nuclear_events_list:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"• <{news['url']}|{news['title']}>"
                 }
             })
 
@@ -86,7 +130,7 @@ def format_slack_message(all_news_data, kaif_data):
         "elements": [
             {
                 "type": "mrkdwn",
-                "text": f"총 {len(all_news_list)}건의 뉴스 | 수집 시간: {datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')} (KST)"
+                "text": f"총 {total_count}건의 뉴스 | 수집 시간: {datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')} (KST)"
             }
         ]
     })

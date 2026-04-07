@@ -5,6 +5,7 @@
 from crawler_energy_news import crawl_energy_news
 from crawler_knpnews import crawl_knpnews
 from crawler_kaif import crawl_kaif
+from kaif_newsletter import KAIFNewsletterParser
 import json
 from datetime import datetime
 
@@ -35,10 +36,21 @@ def crawl_all_news():
     all_news.extend(knp_news)
 
     # 3. 한국원자력산업회의 크롤링 (오늘 날짜만)
-    print("\n[3/3] 한국원자력산업회의 크롤링 중 (오늘 날짜 게시물)...")
+    print("\n[3/4] 한국원자력산업회의 크롤링 중 (오늘 날짜 게시물)...")
     print("-"*100)
     kaif_url = "https://www.kaif.or.kr/ko/ko/?c=250&s=250"
     kaif_posts = crawl_kaif(kaif_url)
+
+    # 4. KAIF 뉴스레터 (Gmail) - 원자력계 소식/이벤트 파싱
+    print("\n[4/4] KAIF 뉴스레터 파싱 중 (원자력계 소식/이벤트)...")
+    print("-"*100)
+    newsletter_items = []
+    try:
+        newsletter_items = KAIFNewsletterParser().fetch_latest_newsletter()
+        all_news.extend(newsletter_items)
+        print(f"[OK] 뉴스레터 항목 {len(newsletter_items)}개 수집")
+    except Exception as e:
+        print(f"[SKIP] KAIF 뉴스레터 수집 실패 (Gmail 미설정?): {e}")
 
     # 전체 결과 저장
     output_file = 'all_news_data.json'
@@ -50,7 +62,8 @@ def crawl_all_news():
             'sources': {
                 'energy_news': len(energy_news),
                 'knpnews': len(knp_news),
-                'kaif': len(kaif_posts)
+                'kaif': len(kaif_posts),
+                'kaif_newsletter': len(newsletter_items)
             },
             'news_list': all_news,
             'kaif_posts': kaif_posts
@@ -58,7 +71,7 @@ def crawl_all_news():
 
     print("\n" + "="*100)
     print("크롤링 완료!")
-    print(f"뉴스 기사: {len(all_news)}개 (에너지신문: {len(energy_news)}, 한국원자력산업신문: {len(knp_news)})")
+    print(f"뉴스 기사: {len(all_news)}개 (에너지신문: {len(energy_news)}, 한국원자력산업신문: {len(knp_news)}, 뉴스레터: {len(newsletter_items)})")
     print(f"KAIF 오늘 게시물: {len(kaif_posts)}개")
     print(f"결과 파일: {output_file}")
     print(f"종료 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
