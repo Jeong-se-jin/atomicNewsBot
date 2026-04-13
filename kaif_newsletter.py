@@ -47,7 +47,7 @@ class KAIFNewsletterParser:
             return []
 
         msg = self.service.users().messages().get(
-            userId='me', messageId=messages[0]['id'], format='full'
+            userId='me', id=messages[0]['id'], format='full'
         ).execute()
 
         html_content = self._extract_html(msg)
