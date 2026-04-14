@@ -55,6 +55,11 @@ class KAIFNewsletterParser:
             print('[KAIF Newsletter] HTML 파트 추출 실패')
             return []
 
+        # 디버그: HTML을 파일로 저장해서 구조 확인
+        with open('kaif_newsletter_debug.html', 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print('[KAIF Newsletter] HTML 저장됨: kaif_newsletter_debug.html')
+
         items = self._parse_sections(html_content, yesterday)
         return items
 
