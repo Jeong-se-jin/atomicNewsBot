@@ -78,41 +78,61 @@ class KAIFNewsletterParser:
 
         return find_html(msg['payload'])
 
+    def _find_section_header(self, soup, keyword):
+        """섹션 헤더 태그 찾기 (div/td 중 키워드 포함 + 짧은 텍스트)"""
+        for tag in soup.find_all(['div', 'td', 'tr']):
+            text = tag.get_text(strip=True).replace('\xa0', ' ').strip()
+            if keyword in text and len(text) < 30:
+                return tag
+        return None
+
     def _parse_sections(self, html, date):
         """HTML에서 원자력계 소식/이벤트 섹션의 링크만 추출"""
-        soup = BeautifulSoup(html, 'lxml')
+        # html.parser: lxml보다 malformed HTML에서 tag 순서를 더 잘 보존
+        soup = BeautifulSoup(html, 'html.parser')
         date_str = date.strftime('%Y.%m.%d')
         items = []
-        current_section = None
+        seen_urls = set()
 
-        for tag in soup.find_all(['td', 'tr', 'p', 'div', 'span', 'a']):
-            text = tag.get_text(strip=True).replace('\xa0', ' ').strip()
+        # 다음 섹션 경계 키워드 (소식/이벤트 처리 중 멈춰야 할 지점)
+        all_boundaries = set(self.TARGET_SECTIONS.keys()) | self.SKIP_SECTIONS
 
-            # 섹션 헤더 감지 (짧은 텍스트만 헤더로 간주)
-            if len(text) < 30:
-                matched = False
-                for keyword, category in self.TARGET_SECTIONS.items():
-                    if keyword in text:
-                        current_section = category
-                        matched = True
+        for target_keyword, category in self.TARGET_SECTIONS.items():
+            header = self._find_section_header(soup, target_keyword)
+            if not header:
+                print(f'[KAIF Newsletter] 섹션 미발견: {target_keyword}')
+                continue
+
+            # 헤더 이후 모든 <a> 태그를 순서대로 순회
+            for a in header.find_all_next('a'):
+                href = a.get('href', '')
+                title = a.get_text(strip=True).replace('\xa0', ' ').strip()
+
+                # 다른 섹션 경계에 도달하면 수집 중단
+                hit_boundary = False
+                for boundary in all_boundaries:
+                    if boundary == target_keyword:
+                        continue
+                    # 이 <a>의 가장 가까운 div/td 조상이 경계 헤더인지 확인
+                    for ancestor in a.parents:
+                        if ancestor.name in ('div', 'td', 'tr'):
+                            anc_text = ancestor.get_text(strip=True).replace('\xa0', ' ').strip()
+                            if boundary in anc_text and len(anc_text) < 30:
+                                hit_boundary = True
+                                break
+                    if hit_boundary:
                         break
-                if not matched:
-                    for skip in self.SKIP_SECTIONS:
-                        if skip in text:
-                            current_section = None
-                            break
+                if hit_boundary:
+                    break
 
-            # 링크 추출 (수집 대상 섹션 내 <a> 태그만)
-            if current_section and tag.name == 'a':
-                href = tag.get('href', '')
-                title = tag.get_text(strip=True)
-                if href and title and href.startswith('http'):
+                if href.startswith('http') and title and len(title) > 3 and href not in seen_urls:
+                    seen_urls.add(href)
                     items.append({
                         'title': title,
                         'url': href,
-                        'source': f'kaif_newsletter',
+                        'source': 'kaif_newsletter',
                         'date': date_str,
-                        'category': current_section,
+                        'category': category,
                     })
 
         nuclear_news_count = sum(1 for i in items if i['category'] == 'nuclear_news')
