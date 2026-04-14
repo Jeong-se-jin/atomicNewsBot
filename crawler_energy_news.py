@@ -96,19 +96,26 @@ def crawl_energy_news(url):
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 (카테고리, 기자, 날짜) — em.info.dated 직접 선택
+                # 메타 정보 — type2: span.byline>em, type1: em.info.*
                 try:
-                    news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
+                    byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
+                    ems = byline.find_elements(By.TAG_NAME, 'em')
+                    news_data['category'] = ems[0].text.strip() if len(ems) >= 1 else None
+                    news_data['reporter'] = ems[1].text.strip() if len(ems) >= 2 else None
+                    news_data['date']     = ems[2].text.strip() if len(ems) >= 3 else None
                 except:
-                    news_data['date'] = None
-                try:
-                    news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
-                except:
-                    news_data['category'] = None
-                try:
-                    news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
-                except:
-                    news_data['reporter'] = None
+                    try:
+                        news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
+                    except:
+                        news_data['date'] = None
+                    try:
+                        news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
+                    except:
+                        news_data['category'] = None
+                    try:
+                        news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
+                    except:
+                        news_data['reporter'] = None
 
                 all_news.append(news_data)
 
