@@ -81,7 +81,7 @@ class KAIFNewsletterParser:
     def _find_section_header(self, soup, keyword):
         """섹션 헤더 태그 찾기 (div/td 중 키워드 포함 + 짧은 텍스트)"""
         for tag in soup.find_all(['div', 'td', 'tr']):
-            text = tag.get_text(strip=True).replace('\xa0', ' ').strip()
+            text = tag.get_text(strip=False).replace('\xa0', ' ').strip()
             if keyword in text and len(text) < 30:
                 return tag
         return None
@@ -106,7 +106,7 @@ class KAIFNewsletterParser:
             # 헤더 이후 모든 <a> 태그를 순서대로 순회
             for a in header.find_all_next('a'):
                 href = a.get('href', '')
-                title = a.get_text(strip=True).replace('\xa0', ' ').strip()
+                title = a.get_text(strip=False).replace('\xa0', ' ').strip()
 
                 # 다른 섹션 경계에 도달하면 수집 중단
                 hit_boundary = False
