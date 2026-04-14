@@ -133,19 +133,47 @@ class KAIFNewsletterParser:
             # 링크 수집: 수집 대상 섹션 안의 <a> 태그만
             if tag.name == 'a' and current_section:
                 href = tag.get('href', '')
-                title = self._get_text(tag)
                 # 수신거부·내비게이션 링크 제외
-                if 'neo_reject' in href or '수신거부' in title or '>' in title:
+                if 'neo_reject' in href:
                     continue
-                if href.startswith('http') and len(title) > 3 and href not in seen_urls:
-                    seen_urls.add(href)
-                    items.append({
-                        'title': title,
-                        'url': href,
-                        'source': 'kaif_newsletter',
-                        'date': date_str,
-                        'category': current_section,
-                    })
+
+                if current_section == 'nuclear_events':
+                    # 이벤트: <a> 안의 직계 <span> 2개 — 첫째=제목(초록), 둘째=날짜/장소
+                    spans = tag.find_all('span', recursive=False)
+                    if len(spans) >= 2:
+                        event_title = self._get_text(spans[0])
+                        date_loc = self._get_text(spans[1])
+                        display_title = f"{event_title} / {date_loc}" if date_loc else event_title
+                    else:
+                        display_title = self._get_text(tag)
+                else:
+                    display_title = self._get_text(tag)
+
+                if '수신거부' in display_title or '>' in display_title:
+                    continue
+
+                if not href.startswith('http') or len(display_title) <= 3 or href in seen_urls:
+                    continue
+
+                # 소식: 같은 <tr>의 3번째 <td>에서 단체명 추출
+                if current_section == 'nuclear_news':
+                    org = ''
+                    tr = tag.find_parent('tr')
+                    if tr:
+                        tds = tr.find_all('td', recursive=False)
+                        if len(tds) >= 3:
+                            org = self._get_text(tds[-1])
+                    if org:
+                        display_title = f"{display_title} - {org}"
+
+                seen_urls.add(href)
+                items.append({
+                    'title': display_title,
+                    'url': href,
+                    'source': 'kaif_newsletter',
+                    'date': date_str,
+                    'category': current_section,
+                })
 
         nuclear_news_count = sum(1 for i in items if i['category'] == 'nuclear_news')
         nuclear_events_count = sum(1 for i in items if i['category'] == 'nuclear_events')

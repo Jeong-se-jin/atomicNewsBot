@@ -202,9 +202,9 @@ def create_today_summary():
     # 어제 날짜 확인 (한국 시간 기준)
     now_kst = datetime.now(KST)
     yesterday = now_kst - timedelta(days=1)
-    today_str = yesterday.strftime('%Y.%m.%d')  # 2026.01.12
-    today_str_alt = yesterday.strftime('%Y-%m-%d')  # 2026-01-12
-    today_date_only = yesterday.strftime('.%m.%d')  # .01.12
+    today_str = yesterday.strftime('%Y.%m.%d')  # 2026.04.13
+    today_str_alt = yesterday.strftime('%Y-%m-%d')  # 2026-04-13
+    today_date_only = yesterday.strftime('%m.%d')  # 04.13 (연도 없는 형식용)
 
     # 모든 뉴스 합치기
     all_news = energy_news + knp_news
@@ -214,11 +214,12 @@ def create_today_summary():
     for news in all_news:
         date_str = news.get('date') or ''
         # 다양한 날짜 형식 체크
-        # "2026.01.12 09:01" 또는 "2026-01-12" 형식
+        # "2026.04.13 09:01", "2026-04-13", "04.13 09:01" 형식
         if date_str and (today_str in date_str or
             today_str_alt in date_str or
             date_str.startswith(today_str) or
-            date_str.startswith(today_str_alt)):
+            date_str.startswith(today_str_alt) or
+            date_str.startswith(today_date_only)):
             today_news.append(news)
             title = news.get('title', '').encode('cp949', errors='replace').decode('cp949')
             print(f"[OK] 어제 뉴스 발견: {title} - {date_str}")

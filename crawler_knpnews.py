@@ -104,27 +104,13 @@ def crawl_knpnews(url):
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 (카테고리, 기자, 날짜)
+                # 메타 정보 (카테고리, 기자, 날짜) — span.byline > em
                 try:
-                    byline = item.find_element(By.CSS_SELECTOR, 'span.byline, .info, .meta')
+                    byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
                     em_elements = byline.find_elements(By.TAG_NAME, 'em')
-
-                    if len(em_elements) >= 3:
-                        news_data['category'] = em_elements[0].text.strip()
-                        news_data['reporter'] = em_elements[1].text.strip()
-                        news_data['date'] = em_elements[2].text.strip()
-                    elif len(em_elements) >= 2:
-                        news_data['category'] = None
-                        news_data['reporter'] = em_elements[0].text.strip()
-                        news_data['date'] = em_elements[1].text.strip()
-                    elif len(em_elements) >= 1:
-                        news_data['category'] = None
-                        news_data['reporter'] = None
-                        news_data['date'] = em_elements[0].text.strip()
-                    else:
-                        news_data['category'] = None
-                        news_data['reporter'] = None
-                        news_data['date'] = None
+                    news_data['category'] = em_elements[0].text.strip() if len(em_elements) >= 1 else None
+                    news_data['reporter'] = em_elements[1].text.strip() if len(em_elements) >= 2 else None
+                    news_data['date']     = em_elements[2].text.strip() if len(em_elements) >= 3 else None
                 except:
                     news_data['category'] = None
                     news_data['reporter'] = None

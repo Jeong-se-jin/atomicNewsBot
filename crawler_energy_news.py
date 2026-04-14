@@ -96,23 +96,23 @@ def crawl_energy_news(url):
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 (카테고리, 기자, 날짜)
+                # 메타 정보 (카테고리, 기자, 날짜) — em.info.dated 직접 선택
                 try:
-                    byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
-                    em_elements = byline.find_elements(By.TAG_NAME, 'em')
-
-                    if len(em_elements) >= 3:
-                        news_data['category'] = em_elements[0].text.strip()
-                        news_data['reporter'] = em_elements[1].text.strip()
-                        news_data['date'] = em_elements[2].text.strip()
-                    else:
-                        news_data['category'] = None
-                        news_data['reporter'] = None
-                        news_data['date'] = None
+                    news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
+                except:
+                    news_data['date'] = None
+                try:
+                    news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
                 except:
                     news_data['category'] = None
+                try:
+                    news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
+                except:
                     news_data['reporter'] = None
-                    news_data['date'] = None
+
+                # 전력·원자력 카테고리만 수집
+                if news_data.get('category') != '전력·원자력':
+                    continue
 
                 all_news.append(news_data)
 
