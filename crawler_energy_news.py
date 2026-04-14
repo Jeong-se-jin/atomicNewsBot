@@ -110,10 +110,6 @@ def crawl_energy_news(url):
                 except:
                     news_data['reporter'] = None
 
-                # 전력·원자력 카테고리만 수집
-                if news_data.get('category') != '전력·원자력':
-                    continue
-
                 all_news.append(news_data)
 
                 # 출력
