@@ -8,7 +8,7 @@ import requests
 # 한국 시간대 (UTC+9)
 KST = timezone(timedelta(hours=9))
 
-def format_slack_message(all_news_data, kaif_data):
+def format_slack_message(all_news_data, kaif_data, newsletter_items=None):
     """
     어제의 원자력 뉴스를 Slack 메시지 형식으로 포맷팅
     """
@@ -34,11 +34,10 @@ def format_slack_message(all_news_data, kaif_data):
     # 일반 뉴스 (에너지신문, 한국원자력산업신문)
     general_news_list = []
     for news in all_news_data:
-        if news.get('category') not in ('nuclear_news', 'nuclear_events'):
-            general_news_list.append({
-                'title': news.get('title', ''),
-                'url': news.get('url', '')
-            })
+        general_news_list.append({
+            'title': news.get('title', ''),
+            'url': news.get('url', '')
+        })
 
     # KAIF 뉴스 링크 (국내기사, 세계기사)
     if kaif_data and len(kaif_data) > 0:
@@ -57,11 +56,10 @@ def format_slack_message(all_news_data, kaif_data):
                 'url': news.get('url', '')
             })
 
-    # 원자력계 소식 (Gmail 뉴스레터)
-    nuclear_news_list = [n for n in all_news_data if n.get('category') == 'nuclear_news']
-
-    # 원자력계 이벤트 (Gmail 뉴스레터)
-    nuclear_events_list = [n for n in all_news_data if n.get('category') == 'nuclear_events']
+    # 원자력계 소식/이벤트 (KAIF 뉴스레터 — 날짜 필터 없이 그대로)
+    newsletter = newsletter_items or []
+    nuclear_news_list = [n for n in newsletter if n.get('category') == 'nuclear_news']
+    nuclear_events_list = [n for n in newsletter if n.get('category') == 'nuclear_events']
 
     total_count = len(general_news_list) + len(nuclear_news_list) + len(nuclear_events_list)
     all_news_list = general_news_list  # 푸터 카운트용
@@ -192,6 +190,15 @@ def create_today_summary():
     except:
         kaif_posts = []
 
+    # KAIF 뉴스레터 (날짜 필터 없이 그대로)
+    try:
+        with open('kaif_newsletter_data.json', 'r', encoding='utf-8') as f:
+            newsletter_data = json.load(f)
+            newsletter_items = newsletter_data.get('items', [])
+        print(f"[OK] 뉴스레터 항목 {len(newsletter_items)}개 로드")
+    except:
+        newsletter_items = []
+
     # 어제 날짜 확인 (한국 시간 기준)
     now_kst = datetime.now(KST)
     yesterday = now_kst - timedelta(days=1)
@@ -227,7 +234,8 @@ def create_today_summary():
             'kaif': len(kaif_posts)
         },
         'news': today_news,
-        'kaif_posts': kaif_posts
+        'kaif_posts': kaif_posts,
+        'newsletter_items': newsletter_items
     }
 
     # JSON 파일로 저장
@@ -255,7 +263,7 @@ def main_with_slack(webhook_url=None):
 
     # Slack 메시지 포맷팅
     print("\nSlack 메시지 포맷팅 중...")
-    blocks = format_slack_message(summary['news'], summary['kaif_posts'])
+    blocks = format_slack_message(summary['news'], summary['kaif_posts'], summary.get('newsletter_items', []))
 
     # Slack 메시지 미리보기 (JSON)
     preview_file = 'slack_message_preview.json'

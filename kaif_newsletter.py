@@ -3,6 +3,7 @@
 
 # -*- coding: utf-8 -*-
 import base64
+import json
 from datetime import datetime, timedelta, timezone
 from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
@@ -61,6 +62,17 @@ class KAIFNewsletterParser:
         print('[KAIF Newsletter] HTML 저장됨: kaif_newsletter_debug.html')
 
         items = self._parse_sections(html_content, yesterday)
+
+        # 별도 JSON 파일로 저장 (날짜 필터 없이 그대로)
+        with open('kaif_newsletter_data.json', 'w', encoding='utf-8') as f:
+            json.dump({
+                'fetched_at': datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S'),
+                'newsletter_date': yesterday.strftime('%Y.%m.%d'),
+                'total_count': len(items),
+                'items': items
+            }, f, ensure_ascii=False, indent=2)
+        print(f'[KAIF Newsletter] kaif_newsletter_data.json 저장 완료 ({len(items)}개)')
+
         return items
 
     def _extract_html(self, msg):

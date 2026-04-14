@@ -47,7 +47,7 @@ def crawl_all_news():
     newsletter_items = []
     try:
         newsletter_items = KAIFNewsletterParser().fetch_latest_newsletter()
-        all_news.extend(newsletter_items)
+        # all_news에 추가하지 않음 — kaif_newsletter_data.json에 별도 저장됨
         print(f"[OK] 뉴스레터 항목 {len(newsletter_items)}개 수집")
     except Exception as e:
         print(f"[SKIP] KAIF 뉴스레터 수집 실패 (Gmail 미설정?): {e}")
