@@ -86,7 +86,7 @@ class KAIFNewsletterParser:
         current_section = None
 
         for tag in soup.find_all(['td', 'tr', 'p', 'div', 'span', 'a']):
-            text = tag.get_text(strip=True)
+            text = tag.get_text(strip=True).replace('\xa0', ' ').strip()
 
             # 섹션 헤더 감지 (짧은 텍스트만 헤더로 간주)
             if len(text) < 30:
