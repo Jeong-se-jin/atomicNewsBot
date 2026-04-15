@@ -96,7 +96,7 @@ def crawl_energy_news(url):
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 — type2: span.byline>em, type1: em.info.*
+                # 메타 정보 — span.byline 안 em 순서: [카테고리, 기자, 날짜]
                 try:
                     byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
                     ems = byline.find_elements(By.TAG_NAME, 'em')
@@ -104,18 +104,9 @@ def crawl_energy_news(url):
                     news_data['reporter'] = ems[1].text.strip() if len(ems) >= 2 else None
                     news_data['date']     = ems[2].text.strip() if len(ems) >= 3 else None
                 except:
-                    try:
-                        news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
-                    except:
-                        news_data['date'] = None
-                    try:
-                        news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
-                    except:
-                        news_data['category'] = None
-                    try:
-                        news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
-                    except:
-                        news_data['reporter'] = None
+                    news_data['category'] = None
+                    news_data['reporter'] = None
+                    news_data['date'] = None
 
                 all_news.append(news_data)
 
@@ -132,20 +123,28 @@ def crawl_energy_news(url):
             except Exception as e:
                 print(f"항목 {idx} 파싱 오류: {e}")
 
+        # 전력·원자력 카테고리만 필터링
+        # (페이지가 JS 클라이언트 필터링 구조라 전체 기사가 로딩됨)
+        nuclear_news = [
+            n for n in all_news
+            if n.get('category') and '원자력' in n['category']
+        ]
+        print(f"\n전력·원자력 필터링: {len(all_news)}개 → {len(nuclear_news)}개")
+
         # JSON 파일로 저장
         output_file = 'energy_news_data.json'
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump({
                 'source': 'energy_news',
                 'url': url,
-                'total_count': len(all_news),
-                'news_list': all_news
+                'total_count': len(nuclear_news),
+                'news_list': nuclear_news
             }, f, ensure_ascii=False, indent=2)
 
-        print("\n" + "="*100)
-        print(f"[OK] {len(all_news)}개의 뉴스 데이터가 '{output_file}' 파일에 저장되었습니다.")
+        print("="*100)
+        print(f"[OK] {len(nuclear_news)}개의 뉴스 데이터가 '{output_file}' 파일에 저장되었습니다.")
 
-        return all_news
+        return nuclear_news
 
     except Exception as e:
         print(f"오류 발생: {e}")
