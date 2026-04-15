@@ -14,6 +14,7 @@ KST = timezone(timedelta(hours=9))
 
 class KAIFNewsletterParser:
     SENDER = 'news@kaif.or.kr'
+    SUBJECT_KEYWORD = '원자력 투데이뉴스'
 
     # 수집할 섹션 키워드 → category 이름
     TARGET_SECTIONS = {
@@ -35,11 +36,11 @@ class KAIFNewsletterParser:
         after = yesterday.strftime('%Y/%m/%d')
         before = now.strftime('%Y/%m/%d')
 
-        query = f'from:{self.SENDER} after:{after} before:{before}'
+        query = f'from:{self.SENDER} subject:"{self.SUBJECT_KEYWORD}" after:{after} before:{before}'
         print(f'[KAIF Newsletter] Gmail 검색 쿼리: {query}')
 
         result = self.service.users().messages().list(
-            userId='me', q=query, maxResults=1
+            userId='me', q=query, maxResults=10
         ).execute()
 
         messages = result.get('messages', [])
@@ -47,21 +48,25 @@ class KAIFNewsletterParser:
             print('[KAIF Newsletter] 해당 날짜 뉴스레터 없음')
             return []
 
-        msg = self.service.users().messages().get(
-            userId='me', id=messages[0]['id'], format='full'
-        ).execute()
+        print(f'[KAIF Newsletter] {len(messages)}개 메일 발견')
+        items = []
+        for i, m in enumerate(messages):
+            msg = self.service.users().messages().get(
+                userId='me', id=m['id'], format='full'
+            ).execute()
 
-        html_content = self._extract_html(msg)
-        if not html_content:
-            print('[KAIF Newsletter] HTML 파트 추출 실패')
-            return []
+            html_content = self._extract_html(msg)
+            if not html_content:
+                print(f'[KAIF Newsletter] 메일 {i+1}: HTML 파트 추출 실패, 스킵')
+                continue
 
-        # 디버그: HTML을 파일로 저장해서 구조 확인
-        with open('kaif_newsletter_debug.html', 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        print('[KAIF Newsletter] HTML 저장됨: kaif_newsletter_debug.html')
+            # 디버그: 첫 번째 메일만 저장
+            if i == 0:
+                with open('kaif_newsletter_debug.html', 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                print('[KAIF Newsletter] HTML 저장됨: kaif_newsletter_debug.html')
 
-        items = self._parse_sections(html_content, yesterday)
+            items.extend(self._parse_sections(html_content, yesterday))
 
         # 별도 JSON 파일로 저장 (날짜 필터 없이 그대로)
         with open('kaif_newsletter_data.json', 'w', encoding='utf-8') as f:
