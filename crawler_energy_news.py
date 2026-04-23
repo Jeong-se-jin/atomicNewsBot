@@ -80,7 +80,7 @@ def crawl_energy_news(url):
                 except:
                     news_data['thumbnail'] = None
 
-                # 제목
+                # 제목 및 URL
                 try:
                     title_elem = item.find_element(By.CSS_SELECTOR, 'h2.titles a')
                     news_data['title'] = title_elem.text.strip()
@@ -91,12 +91,12 @@ def crawl_energy_news(url):
 
                 # 본문 미리보기
                 try:
-                    lead_elem = item.find_element(By.CSS_SELECTOR, 'p.lead a')
-                    news_data['preview'] = lead_elem.text.strip()
+                    news_data['preview'] = item.find_element(By.CSS_SELECTOR, 'p.lead a').text.strip()
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 — span.byline 안 em 순서: [카테고리, 기자, 날짜]
+                # 메타 정보 — type2: span.byline > em [카테고리, 기자, 날짜]
+                #             type1: em.info.category / em.info.name / em.info.dated
                 try:
                     byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
                     ems = byline.find_elements(By.TAG_NAME, 'em')
@@ -104,21 +104,36 @@ def crawl_energy_news(url):
                     news_data['reporter'] = ems[1].text.strip() if len(ems) >= 2 else None
                     news_data['date']     = ems[2].text.strip() if len(ems) >= 3 else None
                 except:
-                    news_data['category'] = None
-                    news_data['reporter'] = None
-                    news_data['date'] = None
+                    # type1 fallback
+                    try:
+                        news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
+                    except:
+                        news_data['category'] = None
+                    try:
+                        news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
+                    except:
+                        news_data['reporter'] = None
+                    try:
+                        news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
+                    except:
+                        news_data['date'] = None
 
                 all_news.append(news_data)
 
                 # 출력
-                print(f"[{idx}] {news_data['title']}")
-                print(f"    URL: {news_data['url']}")
-                print(f"    카테고리: {news_data['category']}")
-                print(f"    기자: {news_data['reporter']}")
-                print(f"    날짜: {news_data['date']}")
-                print(f"    썸네일: {news_data['thumbnail']}")
-                print(f"    미리보기: {news_data['preview'][:100]}..." if news_data['preview'] else "    미리보기: None")
-                print("-"*100)
+                try:
+                    print(f"[{idx}] {news_data['title']}")
+                    print(f"    URL: {news_data['url']}")
+                    print(f"    카테고리: {news_data['category']}")
+                    print(f"    기자: {news_data['reporter']}")
+                    print(f"    날짜: {news_data['date']}")
+                    print(f"    썸네일: {news_data['thumbnail']}")
+                    print(f"    미리보기: {news_data['preview'][:100]}..." if news_data['preview'] else "    미리보기: None")
+                    print("-"*100)
+                except UnicodeEncodeError:
+                    title_safe = news_data['title'].encode('cp949', errors='replace').decode('cp949')
+                    print(f"[{idx}] {title_safe} (일부 문자 대체)")
+                    print("-"*100)
 
             except Exception as e:
                 print(f"항목 {idx} 파싱 오류: {e}")

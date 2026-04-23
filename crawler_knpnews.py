@@ -78,43 +78,49 @@ def crawl_knpnews(url):
             try:
                 # 썸네일 이미지
                 try:
-                    img = item.find_element(By.CSS_SELECTOR, 'img')
+                    img = item.find_element(By.CSS_SELECTOR, 'a.thumb img')
                     news_data['thumbnail'] = img.get_attribute('src')
                 except:
                     news_data['thumbnail'] = None
 
                 # 제목 및 링크
                 try:
-                    title_elem = item.find_element(By.CSS_SELECTOR, 'h2 a, h3 a, .titles a, strong a')
+                    title_elem = item.find_element(By.CSS_SELECTOR, 'h2.titles a')
                     news_data['title'] = title_elem.text.strip()
                     news_data['url'] = title_elem.get_attribute('href')
                 except:
-                    try:
-                        link_elem = item.find_element(By.CSS_SELECTOR, 'a')
-                        news_data['title'] = link_elem.text.strip()
-                        news_data['url'] = link_elem.get_attribute('href')
-                    except:
-                        news_data['title'] = None
-                        news_data['url'] = None
+                    news_data['title'] = None
+                    news_data['url'] = None
 
                 # 본문 미리보기
                 try:
-                    lead_elem = item.find_element(By.CSS_SELECTOR, 'p.lead, .description, .summary')
+                    lead_elem = item.find_element(By.CSS_SELECTOR, 'p.lead a')
                     news_data['preview'] = lead_elem.text.strip()
                 except:
                     news_data['preview'] = None
 
-                # 메타 정보 (카테고리, 기자, 날짜) — span.byline > em
+                # 메타 정보 — type2: span.byline > em [카테고리, 기자, 날짜]
+                #             type1: em.info.category / em.info.name / em.info.dated
                 try:
                     byline = item.find_element(By.CSS_SELECTOR, 'span.byline')
-                    em_elements = byline.find_elements(By.TAG_NAME, 'em')
-                    news_data['category'] = em_elements[0].text.strip() if len(em_elements) >= 1 else None
-                    news_data['reporter'] = em_elements[1].text.strip() if len(em_elements) >= 2 else None
-                    news_data['date']     = em_elements[2].text.strip() if len(em_elements) >= 3 else None
+                    ems = byline.find_elements(By.TAG_NAME, 'em')
+                    news_data['category'] = ems[0].text.strip() if len(ems) >= 1 else None
+                    news_data['reporter'] = ems[1].text.strip() if len(ems) >= 2 else None
+                    news_data['date']     = ems[2].text.strip() if len(ems) >= 3 else None
                 except:
-                    news_data['category'] = None
-                    news_data['reporter'] = None
-                    news_data['date'] = None
+                    # type1 fallback
+                    try:
+                        news_data['category'] = item.find_element(By.CSS_SELECTOR, 'em.info.category').text.strip()
+                    except:
+                        news_data['category'] = None
+                    try:
+                        news_data['reporter'] = item.find_element(By.CSS_SELECTOR, 'em.info.name').text.strip()
+                    except:
+                        news_data['reporter'] = None
+                    try:
+                        news_data['date'] = item.find_element(By.CSS_SELECTOR, 'em.info.dated').text.strip()
+                    except:
+                        news_data['date'] = None
 
                 # 유효한 데이터가 있는 경우만 추가
                 if news_data['title'] and news_data['url']:
